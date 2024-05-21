@@ -1,15 +1,14 @@
-import {Component} from 'react'
+import React, {Component} from 'react'
 import Cookies from 'js-cookie'
 import {Redirect} from 'react-router-dom'
-
 import './index.css'
 
 class LoginForm extends Component {
-  state = {username: '', password: '', showSubmitError: false, errorMsg: ''}
+  state = {name: '', password: '', showSubmitError: false, errorMsg: ''}
 
   onSubmitSuccess = jwtToken => {
     const {history} = this.props
-    Cookies.set('jwt_token', jwtToken, {expires: 30})
+    Cookies.set('token', jwtToken, {expires: 30})
     history.replace('/')
   }
 
@@ -22,26 +21,34 @@ class LoginForm extends Component {
   }
 
   onChangeUsername = event => {
-    this.setState({username: event.target.value})
+    this.setState({name: event.target.value})
   }
 
   submitForm = async event => {
     event.preventDefault()
-    const {username, password} = this.state
-    const userDetails = {username, password}
-    const loginApiUrl = 'https://apis.ccbp.in/login'
+    const {name, password} = this.state
+    const userdetails = {name, password}
+    const loginApiUrl = 'https://jobbyback.onrender.com/login'
     const options = {
       method: 'POST',
-      body: JSON.stringify(userDetails),
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(userdetails),
     }
-    const response = await fetch(loginApiUrl, options)
 
-    const data = await response.json()
+    try {
+      const response = await fetch(loginApiUrl, options)
+      const data = await response.json()
 
-    if (response.ok === true) {
-      this.onSubmitSuccess(data.jwt_token)
-    } else {
-      this.onSubmitFailure(data.error_msg)
+      if (response.ok) {
+        this.onSubmitSuccess(data.token)
+      } else {
+        this.onSubmitFailure(data.error)
+      }
+    } catch (error) {
+      console.error('Error during login:', error)
+      this.onSubmitFailure('Something went wrong. Please try again.')
     }
   }
 
@@ -65,7 +72,7 @@ class LoginForm extends Component {
   }
 
   renderUserNameField = () => {
-    const {username} = this.state
+    const {name} = this.state
     return (
       <>
         <label className="input-label" htmlFor="username">
@@ -75,7 +82,7 @@ class LoginForm extends Component {
           type="text"
           id="username"
           className="input-field"
-          value={username}
+          value={name}
           onChange={this.onChangeUsername}
           placeholder="rahul"
         />
@@ -86,30 +93,42 @@ class LoginForm extends Component {
   render() {
     const {showSubmitError, errorMsg} = this.state
 
-    const jwtToken = Cookies.get('jwt_token')
+    const onsignup = () => {
+      const {history} = this.props
+      Cookies.remove('token')
+      history.replace('/signup')
+    }
+
+    const jwtToken = Cookies.get('token')
     if (jwtToken !== undefined) {
       return <Redirect to="/" />
     }
 
     return (
-      <>
-        <div className="login-form-container">
-          <form className="form-container" onSubmit={this.submitForm}>
-            <img
-              src="https://assets.ccbp.in/frontend/react-js/logo-img.png"
-              className="website-logo"
-              alt="website logo"
-            />
-            <div className="input-container">{this.renderUserNameField()}</div>
-            <div className="input-container">{this.renderPasswordField()}</div>
-            <button className="login-button" type="submit">
+      <div className="login-form-container">
+        <form className="form-container" onSubmit={this.submitForm}>
+          <img
+            src="https://assets.ccbp.in/frontend/react-js/logo-img.png"
+            className="website-logo"
+            alt="website logo"
+          />
+          <div className="input-container">{this.renderUserNameField()}</div>
+          <div className="input-container">{this.renderPasswordField()}</div>
+          <div className="final">
+            <button className="logout-desktop-btn" type="submit">
               Login
             </button>
-
-            {showSubmitError && <p className="error-message">*{errorMsg}</p>}
-          </form>
-        </div>
-      </>
+            <button
+              type="button"
+              onClick={onsignup}
+              className="fe logout-desktop-btn"
+            >
+              Signup
+            </button>
+          </div>
+          {showSubmitError && <p className="error-message">*{errorMsg}</p>}
+        </form>
+      </div>
     )
   }
 }
